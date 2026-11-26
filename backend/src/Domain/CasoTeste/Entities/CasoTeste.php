@@ -2,6 +2,7 @@
 
 namespace Src\Domain\CasoTeste\Entities;
 
+use Src\Domain\CasoTeste\Enums\OrigemCaso;
 use Src\Domain\CasoTeste\Enums\Prioridade;
 use Src\Domain\Execucao\Enums\ResultadoExecucao;
 use Src\Domain\Shared\Exceptions\DomainException;
@@ -22,6 +23,8 @@ final class CasoTeste
         private string $resultadoEsperado,
         private Prioridade $prioridade,
         private int $ordem,
+        private OrigemCaso $origem = OrigemCaso::MANUAL,
+        private ?string $referencia = null,
     ) {
         $this->validar();
     }
@@ -34,8 +37,11 @@ final class CasoTeste
         Prioridade $prioridade = Prioridade::MEDIA,
         ?string $preCondicoes = null,
         int $ordem = 0,
+        OrigemCaso $origem = OrigemCaso::MANUAL,
+        ?string $referencia = null,
     ): self {
-        return new self(null, $planoId, trim($titulo), $preCondicoes, trim($passos), trim($resultadoEsperado), $prioridade, $ordem);
+        return new self(null, $planoId, trim($titulo), $preCondicoes, trim($passos), trim($resultadoEsperado), $prioridade, $ordem,
+            $origem, $referencia !== null ? mb_substr(trim($referencia), 0, 150) : null);
     }
 
     public static function restaurar(
@@ -47,8 +53,10 @@ final class CasoTeste
         string $resultadoEsperado,
         Prioridade $prioridade,
         int $ordem,
+        OrigemCaso $origem = OrigemCaso::MANUAL,
+        ?string $referencia = null,
     ): self {
-        return new self($id, $planoId, $titulo, $preCondicoes, $passos, $resultadoEsperado, $prioridade, $ordem);
+        return new self($id, $planoId, $titulo, $preCondicoes, $passos, $resultadoEsperado, $prioridade, $ordem, $origem, $referencia);
     }
 
     public function atualizar(
@@ -107,6 +115,9 @@ final class CasoTeste
     public function prioridade(): Prioridade { return $this->prioridade; }
     public function ordem(): int { return $this->ordem; }
     public function resultadoAtual(): ?ResultadoExecucao { return $this->resultadoAtual; }
+    public function origem(): OrigemCaso { return $this->origem; }
+    /** Identificador na origem: id do caso no sistema oficial (MCP), "regra:3:v2", "backlog:5:US-01"... */
+    public function referencia(): ?string { return $this->referencia; }
 
     public function toArray(): array
     {
@@ -121,6 +132,9 @@ final class CasoTeste
             'prioridade_rotulo' => $this->prioridade->rotulo(),
             'ordem' => $this->ordem,
             'resultado_atual' => $this->resultadoAtual?->value ?? 'nao_executado',
+            'origem' => $this->origem->value,
+            'origem_rotulo' => $this->origem->rotulo(),
+            'referencia' => $this->referencia,
         ];
     }
 }

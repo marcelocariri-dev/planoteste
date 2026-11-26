@@ -10,7 +10,7 @@ class CasoTesteModel extends Model
 {
     protected $table = 'casos_teste';
 
-    protected $fillable = ['plano_id', 'titulo', 'pre_condicoes', 'passos', 'resultado_esperado', 'prioridade', 'ordem'];
+    protected $fillable = ['plano_id', 'titulo', 'pre_condicoes', 'passos', 'resultado_esperado', 'prioridade', 'ordem', 'origem', 'referencia'];
 
     protected $casts = ['ordem' => 'integer', 'plano_id' => 'integer'];
 

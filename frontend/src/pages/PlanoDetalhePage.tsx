@@ -4,17 +4,20 @@ import { ApiError } from '../api/client';
 import { planoTesteApi } from '../api/planoTesteApi';
 import { PrioridadeBadge, ResultadoBadge, StatusBadge } from '../components/Badges';
 import { CasoForm } from '../components/CasoForm';
+import { ImportadorMcp } from '../components/ImportadorMcp';
+import { mcpApi } from '../api/produtoApi';
 import { ExecucaoPainel } from '../components/ExecucaoPainel';
 import { Modal } from '../components/Modal';
 import { PlanoForm } from '../components/PlanoForm';
 import { ResumoBarra } from '../components/ResumoBarra';
-import { ROTULO_RESULTADO, type Caso, type PlanoDetalhe, type ResultadoAtual } from '../types';
+import { ROTULO_RESULTADO, type Caso, type ConexaoMcp, type PlanoDetalhe, type ResultadoAtual } from '../types';
 
 type ModalAberto =
   | { tipo: 'editarPlano' }
   | { tipo: 'novoCaso' }
   | { tipo: 'editarCaso'; caso: Caso }
   | { tipo: 'executar'; casoId: number }
+  | { tipo: 'mcp' }
   | null;
 
 export function PlanoDetalhePage() {
@@ -24,6 +27,9 @@ export function PlanoDetalhePage() {
   const [erro, setErro] = useState('');
   const [modal, setModal] = useState<ModalAberto>(null);
   const [filtro, setFiltro] = useState<ResultadoAtual | ''>('');
+  const [conexoesMcp, setConexoesMcp] = useState<ConexaoMcp[]>([]);
+
+  useEffect(() => { mcpApi.listar().then(setConexoesMcp).catch(() => {}); }, []);
 
   const carregar = useCallback(
     () =>
@@ -107,6 +113,9 @@ export function PlanoDetalhePage() {
               <option key={r} value={r}>{ROTULO_RESULTADO[r]}</option>
             ))}
           </select>
+          {!concluido && conexoesMcp.some((c) => c.ativo) && (
+            <button className="btn" onClick={() => setModal({ tipo: 'mcp' })}>⇄ Importar casos oficiais (MCP)</button>
+          )}
           {!concluido && (
             <button className="btn btn-primario" onClick={() => setModal({ tipo: 'novoCaso' })}>+ Caso de teste</button>
           )}
@@ -132,6 +141,9 @@ export function PlanoDetalhePage() {
                 <td className="muted">{c.ordem}</td>
                 <td>
                   <button className="link" onClick={() => setModal({ tipo: 'executar', casoId: c.id })}>{c.titulo}</button>
+                  {c.origem !== 'manual' && (
+                    <span className={`chip origem-${c.origem}`} title={c.referencia ?? undefined}>{c.origem_rotulo}</span>
+                  )}
                 </td>
                 <td><PrioridadeBadge prioridade={c.prioridade} /></td>
                 <td><ResultadoBadge resultado={c.resultado_atual} /></td>
@@ -170,6 +182,11 @@ export function PlanoDetalhePage() {
             onCancelar={() => setModal(null)}
             onSalvo={() => { setModal(null); carregar(); }}
           />
+        </Modal>
+      )}
+      {modal?.tipo === 'mcp' && (
+        <Modal titulo="Importar casos oficiais via MCP" onFechar={() => setModal(null)} largo>
+          <ImportadorMcp conexoes={conexoesMcp} planoIdFixo={id} onImportado={() => carregar()} />
         </Modal>
       )}
       {casoExecutando && (
