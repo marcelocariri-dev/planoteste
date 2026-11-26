@@ -1,0 +1,69 @@
+# Sistema de Plano de Teste - containers novos, independentes do SoftcomShop.
+# Para ligar à rede do SoftcomShop use também o docker-compose.softcomshop.yml (ver README).
+name: plano-teste
+
+services:
+  plano-teste-db:
+    image: mysql:8.0
+    container_name: plano-teste-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: plano_teste
+      MYSQL_USER: plano_teste
+      MYSQL_PASSWORD: plano_teste
+      MYSQL_ROOT_PASSWORD: root
+      TZ: America/Sao_Paulo
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${DB_PORT_HOST:-3310}:3306"
+    volumes:
+      - plano-teste-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  plano-teste-api:
+    build: ./docker/php
+    image: plano-teste-api
+    container_name: plano-teste-api
+    restart: unless-stopped
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: plano-teste-db
+      DB_PORT: 3306
+      DB_DATABASE: plano_teste
+      DB_USERNAME: plano_teste
+      DB_PASSWORD: plano_teste
+      API_PORT: ${API_PORT:-8090}
+      PHP_CLI_SERVER_WORKERS: 4
+    volumes:
+      - ./backend:/var/www/html
+      - plano-teste-composer:/root/.composer/cache
+    ports:
+      - "${API_PORT:-8090}:8000"
+    depends_on:
+      plano-teste-db:
+        condition: service_healthy
+
+  plano-teste-web:
+    image: node:22-alpine
+    container_name: plano-teste-web
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      VITE_API_PROXY: http://plano-teste-api:8000
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0 --port 5173"
+    volumes:
+      - ./frontend:/app
+      - plano-teste-node-modules:/app/node_modules
+    ports:
+      - "${WEB_PORT:-5180}:5173"
+    depends_on:
+      - plano-teste-api
+
+volumes:
+  plano-teste-mysql:
+  plano-teste-composer:
+  plano-teste-node-modules:

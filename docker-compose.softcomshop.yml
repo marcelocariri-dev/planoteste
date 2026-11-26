@@ -1,0 +1,20 @@
+# Override opcional: conecta a API e o banco do Plano de Teste à rede do docker do SoftcomShop,
+# para que os containers se enxerguem pelo nome (ex.: a API acessar um serviço do SoftcomShop).
+#
+# Descubra o nome da rede com:  docker network ls
+# e defina SOFTCOMSHOP_NETWORK no arquivo .env desta pasta.
+#
+# Uso: docker compose -f docker-compose.yml -f docker-compose.softcomshop.yml up -d --build
+
+services:
+  plano-teste-db:
+    networks: [default, softcomshop]
+  plano-teste-api:
+    networks: [default, softcomshop]
+  plano-teste-web:
+    networks: [default]
+
+networks:
+  softcomshop:
+    external: true
+    name: ${SOFTCOMSHOP_NETWORK:-softcomshop_default}
