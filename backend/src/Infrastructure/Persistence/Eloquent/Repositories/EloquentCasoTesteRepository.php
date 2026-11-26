@@ -3,6 +3,7 @@
 namespace Src\Infrastructure\Persistence\Eloquent\Repositories;
 
 use Src\Domain\CasoTeste\Entities\CasoTeste;
+use Src\Domain\CasoTeste\Enums\OrigemCaso;
 use Src\Domain\CasoTeste\Enums\Prioridade;
 use Src\Domain\CasoTeste\Repositories\CasoTesteRepositoryInterface;
 use Src\Infrastructure\Persistence\Eloquent\Models\CasoTesteModel;
@@ -31,6 +32,11 @@ final class EloquentCasoTesteRepository implements CasoTesteRepositoryInterface
         return ((int) CasoTesteModel::where('plano_id', $planoId)->max('ordem')) + 1;
     }
 
+    public function referenciasDoPlano(int $planoId): array
+    {
+        return CasoTesteModel::where('plano_id', $planoId)->whereNotNull('referencia')->pluck('referencia')->all();
+    }
+
     public function salvar(CasoTeste $caso): CasoTeste
     {
         $model = $caso->id() ? CasoTesteModel::findOrFail($caso->id()) : new CasoTesteModel();
@@ -43,6 +49,8 @@ final class EloquentCasoTesteRepository implements CasoTesteRepositoryInterface
             'resultado_esperado' => $caso->resultadoEsperado(),
             'prioridade' => $caso->prioridade()->value,
             'ordem' => $caso->ordem(),
+            'origem' => $caso->origem()->value,
+            'referencia' => $caso->referencia(),
         ])->save();
 
         return $this->paraEntidade($model->refresh());
@@ -64,6 +72,8 @@ final class EloquentCasoTesteRepository implements CasoTesteRepositoryInterface
             resultadoEsperado: $m->resultado_esperado,
             prioridade: Prioridade::from($m->prioridade),
             ordem: (int) $m->ordem,
+            origem: OrigemCaso::tryFrom((string) $m->origem) ?? OrigemCaso::MANUAL,
+            referencia: $m->referencia,
         );
     }
 }

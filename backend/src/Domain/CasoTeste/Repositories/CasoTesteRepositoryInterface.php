@@ -13,6 +13,9 @@ interface CasoTesteRepositoryInterface
 
     public function proximaOrdem(int $planoId): int;
 
+    /** @return string[] referências já existentes no plano (para não importar duplicado) */
+    public function referenciasDoPlano(int $planoId): array;
+
     public function salvar(CasoTeste $caso): CasoTeste;
 
     public function excluir(int $id): void;
